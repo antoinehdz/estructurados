@@ -1,13 +1,14 @@
 import boto3
 
-def get_item(client_id):
+def get_llamadas_capital_from_dynamodb(client_id):
     dynamodb = boto3.resource('dynamodb', region_name='tu-region')
     table = dynamodb.Table('NombreDeTuTabla')
-    
     response = table.get_item(Key={'CLIENT_ID': client_id})
     item = response.get('Item', {})
-    if item:
-        return item
-    else:
-        print("No item found with CLIENT_ID:", client_id)
-        return None
+    llamadas_capital_info = item.get("Informacion_Instrumento", {}).get("Llamadas_Capital", [])
+    return llamadas_capital_info
+
+# Usar la función
+client_id = "1_R-X"  # El CLIENT_ID usado para insertar el ítem
+llamadas_capital_info = get_llamadas_capital_from_dynamodb(client_id)
+print("Llamadas de Capital desde DynamoDB:", llamadas_capital_info)
