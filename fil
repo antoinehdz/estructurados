@@ -106,3 +106,58 @@ df.to_csv('output.csv', index_label='BYR')
 wb.close()
 
 
+##############################################
+
+from openpyxl import load_workbook
+import pandas as pd
+
+# Cargar el libro de Excel, asegurándose de obtener valores en lugar de fórmulas
+wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
+hoja = wb['NombreDeLaHoja']
+
+# Configuración inicial
+col_inicio = 'BYR'  # Columna para índices
+col_datos_inicio = 'BYT'  # Columna inicial para datos
+col_excluir = 'BYS'  # Columna para excluir
+fila_inicio = 52
+fila_fin = 56
+
+# Determinar la última columna con datos empezando desde 'BYT'
+max_col = col_datos_inicio
+while True:
+    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+        max_col = next_col(max_col)  # Usar función next_col definida anteriormente
+    else:
+        break
+
+# Ajustar a la última columna útil (retroceder una posición porque el loop va una columna de más)
+max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
+
+# Leer los datos, excluyendo 'BYS'
+data = []
+index_values = []
+for fila in range(fila_inicio, fila_fin + 1):
+    row_data = []
+    col = col_datos_inicio
+    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
+    while col != next_col(max_col):
+        if col != col_excluir:  # Saltar la columna 'BYS'
+            celda = f'{col}{fila}'
+            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
+        col = next_col(col)
+    data.append(row_data)
+
+# Crear el DataFrame usando la fila 52 desde 'BYT' como encabezados de columna (excluyendo 'BYS')
+df = pd.DataFrame(data, columns=[hoja[f'{col}{fila_inicio}'].value for col in range(ord(col_datos_inicio), ord(max_col)+1) if col != col_excluir], index=index_values)
+
+# Mostrar el DataFrame para verificación
+print(df)
+
+# Opcional: Guardar el DataFrame a un archivo CSV
+df.to_csv('output.csv', index_label='BYR')
+
+# Cerrar el workbook
+wb.close()
+
+
+
