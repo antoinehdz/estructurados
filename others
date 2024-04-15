@@ -1,0 +1,22 @@
+import yfinance as yf
+import pandas as pd
+
+def descargar_precios(indices):
+    """
+    Descarga los precios de cierre ajustados de los últimos 30 días para una lista de índices.
+    
+    Args:
+    indices (list): Lista de los símbolos de los índices a descargar.
+    
+    Returns:
+    pd.DataFrame: Un DataFrame de pandas con los precios de cierre ajustados.
+    """
+    data = yf.download(indices, period="1mo")['Adj Close']
+    return data
+
+# Lista de índices
+indices = ["^MXX", "^IRT", "^N225", "^GSPC", "^FTSE", "^SP500TR"]
+
+# Descargar los datos
+precios = descargar_precios(indices)
+print(precios.tail())  # Muestra los últimos 5 registros para ver datos recientes
