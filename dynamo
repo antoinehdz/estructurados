@@ -119,24 +119,34 @@ item_to_insert = {
 from decimal import Decimal
 import pandas as pd
 
-def convert_all_floats_to_decimals(df):
-    """
-    Convierte todos los floats en el DataFrame dado a Decimals para compatibilidad con DynamoDB.
-    """
-    for column in df.columns:
-        if pd.api.types.is_float_dtype(df[column]):
-            df[column] = df[column].apply(lambda x: Decimal(str(x)) if pd.notna(x) else None)
-    return df
+from decimal import Decimal
+import pandas as pd
 
-fecha_info = convert_all_floats_to_decimals(fecha_info)
-identificador = convert_all_floats_to_decimals(identificador)
-info_general = convert_all_floats_to_decimals(info_general)
-detalle_2 = convert_all_floats_to_decimals(detalle_2)
-detalle_3 = convert_all_floats_to_decimals(detalle_3)
-detalle_4 = convert_all_floats_to_decimals(detalle_4)
-detalle_5 = convert_all_floats_to_decimals(detalle_5)
-detalle_6 = convert_all_floats_to_decimals(detalle_6)
-detalle_A = convert_all_floats_to_decimals(detalle_A)
+def convert_floats_to_decimals(obj):
+    """
+    Recursivamente convierte todos los floats en un objeto estructurado (puede ser un diccionario, lista, o DataFrame) a Decimals.
+    """
+    if isinstance(obj, pd.DataFrame):  # Si es un DataFrame, aplicar a cada columna
+        for column in obj:
+            obj[column] = obj[column].apply(convert_floats_to_decimals)
+        return obj
+    elif isinstance(obj, list):  # Si es una lista, aplicar a cada elemento
+        return [convert_floats_to_decimals(x) for x in obj]
+    elif isinstance(obj, float):  # Si es un float, convertir a Decimal
+        return Decimal(str(obj))
+    return obj  # Si no es ni DataFrame, ni lista, ni float, retornar el objeto sin cambios
+
+
+fecha_info = convert_floats_to_decimals(fecha_info)
+identificador = convert_floats_to_decimals(identificador)
+info_general = convert_floats_to_decimals(info_general)
+detalle_2 = convert_floats_to_decimals(detalle_2)
+detalle_3 = convert_floats_to_decimals(detalle_3)
+detalle_4 = convert_floats_to_decimals(detalle_4)
+detalle_5 = convert_floats_to_decimals(detalle_5)
+detalle_6 = convert_floats_to_decimals(detalle_6)
+detalle_A = convert_floats_to_decimals(detalle_A)
+
 
 
 
