@@ -12,6 +12,20 @@ instrumento_dict = {
     "Llamadas_Capital": detalle_6,
     "Distribuciones Pagadas": detalle_A
 }
+
+def dataframe_to_item_list(df):
+    return df.to_dict('records')  # Convierte el dataframe en una lista de diccionarios
+
+# Convirtiendo cada DataFrame en una lista de diccionarios
+items_info_identificador = dataframe_to_item_list(instrumento_dict["Info_Identificador"])
+items_informacion_general = dataframe_to_item_list(instrumento_dict["Informacion_General"])
+items_proyectos_participantes = dataframe_to_item_list(instrumento_dict["Proyectos_Participantes"])
+items_activos_composicion = dataframe_to_item_list(instrumento_dict["Activos_Composicion"])
+items_gastos_comisiones = dataframe_to_item_list(instrumento_dict["Gastos_Comisiones"])
+items_coinversionistas = dataframe_to_item_list(instrumento_dict["Coinversionistas"])
+items_llamadas_capital = dataframe_to_item_list(instrumento_dict["Llamadas_Capital"])
+items_distribuciones_pagadas = dataframe_to_item_list(instrumento_dict["Distribuciones Pagadas"])
+
     
 
 def next_col(col):
