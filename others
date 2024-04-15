@@ -1,22 +1,18 @@
-import yfinance as yf
-import pandas as pd
+import requests
 
-def descargar_precios(indices):
-    """
-    Descarga los precios de cierre ajustados de los últimos 30 días para una lista de índices.
+def obtener_datos_alpha_vantage(ticker, api_key):
+    URL = "https://www.alphavantage.co/query"
+    PARAMS = {
+        "function": "TIME_SERIES_DAILY_ADJUSTED",
+        "symbol": ticker,
+        "apikey": api_key,
+        "outputsize": "full"  # o "compact" para los últimos 100 puntos de datos
+    }
     
-    Args:
-    indices (list): Lista de los símbolos de los índices a descargar.
-    
-    Returns:
-    pd.DataFrame: Un DataFrame de pandas con los precios de cierre ajustados.
-    """
-    data = yf.download(indices, period="1mo")['Adj Close']
+    response = requests.get(URL, params=PARAMS)
+    data = response.json()  # Suponiendo que la respuesta es en formato JSON
     return data
 
-# Lista de índices
-indices = ["^MXX", "^IRT", "^N225", "^GSPC", "^FTSE", "^SP500TR"]
-
-# Descargar los datos
-precios = descargar_precios(indices)
-print(precios.tail())  # Muestra los últimos 5 registros para ver datos recientes
+api_key = 'your_api_key_here'
+datos_av = obtener_datos_alpha_vantage("IRTCOMPMX.MX", api_key)
+print(datos_av)
