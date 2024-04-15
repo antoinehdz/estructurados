@@ -17,3 +17,27 @@ items_gastos_comisiones = add_client_id_to_items(items_gastos_comisiones, client
 items_coinversionistas = add_client_id_to_items(items_coinversionistas, client_id)
 items_llamadas_capital = add_client_id_to_items(items_llamadas_capital, client_id)
 items_distribuciones_pagadas = add_client_id_to_items(items_distribuciones_pagadas, client_id)
+
+import boto3
+
+# Inicializar el cliente de DynamoDB
+dynamodb = boto3.resource('dynamodb', region_name='tu-region')
+table = dynamodb.Table('NombreDeTuTabla')  # Reemplaza con el nombre real de tu tabla
+
+def upload_batch(batch_items):
+    """
+    Función para subir un lote de ítems a DynamoDB
+    """
+    with table.batch_writer() as batch:
+        for item in batch_items:
+            batch.put_item(Item=item)
+
+# Subir cada DataFrame como un lote de ítems a DynamoDB
+upload_batch(items_info_identificador)
+upload_batch(items_informacion_general)
+upload_batch(items_proyectos_participantes)
+upload_batch(items_activos_composicion)
+upload_batch(items_gastos_comisiones)
+upload_batch(items_coinversionistas)
+upload_batch(items_llamadas_capital)
+upload_batch(items_distribuciones_pagadas)
