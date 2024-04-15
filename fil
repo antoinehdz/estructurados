@@ -1,3 +1,7 @@
+identificador.at[1, 'A'] + identificador.at[2, 'A'] + identificador.at[3, 'A']
+
+
+
 def next_col(col):
     """ Incrementa un nombre de columna de Excel (e.g., 'A' -> 'B', 'Z' -> 'AA'). """
     if col == '': return 'A'
