@@ -1,195 +1,8 @@
-identificador.at[1, 'A'] + identificador.at[2, 'A'] + identificador.at[3, 'A']
+wb = load_workbook(ruta_prospectos+archivo, data_only=True)
+hoja_formato = wb["Formato"]
 
-instrumento_dict = {
-    "CLIENT_ID":nombre_instrumento, 
-    "Fecha_Informacion": fecha_info,
-    "Info_Identificador": identificador,
-    "Informacion_General":info_general,
-    "Proyectos_Participantes": detalle_2,
-    "Activos_Composicion": detalle_3,
-    "Gastos_Comisiones": detalle_4,
-    "Coinversionistas": detalle_5,
-    "Llamadas_Capital": detalle_6,
-    "Distribuciones Pagadas": detalle_A
-}
+celda = hoja_formato["BYT9"]
 
-def dataframe_to_item_list(df):
-    return df.to_dict('records')  # Convierte el dataframe en una lista de diccionarios
-
-# Convirtiendo cada DataFrame en una lista de diccionarios
-items_info_identificador = dataframe_to_item_list(instrumento_dict["Info_Identificador"])
-items_informacion_general = dataframe_to_item_list(instrumento_dict["Informacion_General"])
-items_proyectos_participantes = dataframe_to_item_list(instrumento_dict["Proyectos_Participantes"])
-items_activos_composicion = dataframe_to_item_list(instrumento_dict["Activos_Composicion"])
-items_gastos_comisiones = dataframe_to_item_list(instrumento_dict["Gastos_Comisiones"])
-items_coinversionistas = dataframe_to_item_list(instrumento_dict["Coinversionistas"])
-items_llamadas_capital = dataframe_to_item_list(instrumento_dict["Llamadas_Capital"])
-items_distribuciones_pagadas = dataframe_to_item_list(instrumento_dict["Distribuciones Pagadas"])
-
-    
-
-def next_col(col):
-    """ Incrementa un nombre de columna de Excel (e.g., 'A' -> 'B', 'Z' -> 'AA'). """
-    if col == '': return 'A'
-    last_char = col[-1]
-    if last_char != 'Z':  # Si no es la última letra
-        return col[:-1] + chr(ord(last_char) + 1)
-    else:  # Si es la última letra
-        return next_col(col[:-1]) + 'A'
-
-# Ejemplo de uso:
-print(next_col('A'))  # Debería imprimir 'B'
-print(next_col('Z'))  # Debería imprimir 'AA'
-print(next_col('AZ')) # Debería imprimir 'BA'
-print(next_col('ZZ')) # Debería imprimir 'AAA'
-
-
-from openpyxl import load_workbook
-
-# Cargar el libro de Excel
-wb = load_workbook(filename='ruta/a/tu/archivo.xlsx')
-hoja = wb['NombreDeLaHoja']  # Asegúrate de usar el nombre correcto de la hoja
-
-# Configuración inicial
-col_inicio = 'BYT'
-fila_inicio = 52
-fila_fin = 56
-
-# Encontrar hasta qué columna leer
-max_col = col_inicio
-while True:
-    # Checar si alguna celda en el rango tiene datos
-    if any(hoja[f'{max_col}{fila}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
-        max_col = next_col(max_col)  # Moverse a la siguiente columna utilizando la función corregida
-    else:
-        break
-
-# Corregir para quedarse con la última columna con datos (retroceder uno porque el loop se pasa uno)
-max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
-
-# Leer los datos
-data_rows = {}
-for fila in range(fila_inicio, fila_fin + 1):
-    valores_fila = []
-    col = col_inicio
-    while col != next_col(max_col):  # Usar la función para detener correctamente
-        celda = f'{col}{fila}'
-        valores_fila.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
-        col = next_col(col)  # Incrementar columna
-    data_rows[f'Fila {fila}'] = valores_fila
-
-# Imprimir los datos extraídos
-for key, value in data_rows.items():
-    print(f"{key}: {value}")
-
-# Guardar y cerrar el libro
-wb.save(filename='ruta/a/tu/archivo_modificado.xlsx')
-wb.close()
-
-from openpyxl import load_workbook
-import pandas as pd
-
-# Cargar el libro de Excel, asegurándose de obtener valores en lugar de fórmulas
-wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
-hoja = wb['NombreDeLaHoja']
-
-# Configuración inicial
-col_inicio = 'BYR'  # Iniciar desde la columna 'BYR'
-col_encabezados = 'BYT'  # Los encabezados están en 'BYT'
-fila_inicio = 52
-fila_fin = 56
-
-# Determinar la última columna con datos
-max_col = col_encabezados
-while True:
-    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
-        max_col = next_col(max_col)  # Usar función next_col definida anteriormente
-    else:
-        break
-
-# Ajustar a la última columna útil
-max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
-
-# Leer los datos incluyendo la fila 52 como encabezados
-data = []
-index_values = []
-for fila in range(fila_inicio, fila_fin + 1):
-    row_data = []
-    col = col_encabezados
-    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")  # Guardar índice
-    while col != next_col(max_col):
-        celda = f'{col}{fila}'
-        row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
-        col = next_col(col)
-    data.append(row_data)
-
-# Crear el DataFrame usando la primera fila (fila 52) como encabezados de columna
-df = pd.DataFrame(data, columns=data[0], index=index_values)  # Establecer index_values como el índice del DataFrame
-
-# Mostrar el DataFrame para verificación
-print(df)
-
-# Opcional: Guardar el DataFrame a un archivo CSV
-df.to_csv('output.csv', index_label='BYR')
-
-# Cerrar el workbook
-wb.close()
-
-
-##############################################
-
-from openpyxl import load_workbook
-import pandas as pd
-
-# Cargar el libro de Excel, asegurándose de obtener valores en lugar de fórmulas
-wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
-hoja = wb['NombreDeLaHoja']
-
-# Configuración inicial
-col_inicio = 'BYR'  # Columna para índices
-col_datos_inicio = 'BYT'  # Columna inicial para datos
-col_excluir = 'BYS'  # Columna para excluir
-fila_inicio = 52
-fila_fin = 56
-
-# Determinar la última columna con datos empezando desde 'BYT'
-max_col = col_datos_inicio
-while True:
-    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
-        max_col = next_col(max_col)  # Usar función next_col definida anteriormente
-    else:
-        break
-
-# Ajustar a la última columna útil (retroceder una posición porque el loop va una columna de más)
-max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
-
-# Leer los datos, excluyendo 'BYS'
-data = []
-index_values = []
-for fila in range(fila_inicio, fila_fin + 1):
-    row_data = []
-    col = col_datos_inicio
-    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
-    while col != next_col(max_col):
-        if col != col_excluir:  # Saltar la columna 'BYS'
-            celda = f'{col}{fila}'
-            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
-        col = next_col(col)
-    data.append(row_data)
-
-# Crear el DataFrame usando la fila 52 desde 'BYT' como encabezados de columna (excluyendo 'BYS')
-df = pd.DataFrame(data, columns=[hoja[f'{col}{fila_inicio}'].value for col in range(ord(col_datos_inicio), ord(max_col)+1) if col != col_excluir], index=index_values)
-
-# Mostrar el DataFrame para verificación
-print(df)
-
-# Opcional: Guardar el DataFrame a un archivo CSV
-df.to_csv('output.csv', index_label='BYR')
-
-# Cerrar el workbook
-wb.close()
-
-##################################
 def col_to_index(col):
     """Convert Excel column letters to zero-indexed number."""
     index = 0
@@ -206,115 +19,169 @@ def index_to_col(idx):
         idx -= 1
     return col
 
-# Determinar la última columna con datos empezando desde 'BYT'
-max_col = col_datos_inicio
-while True:
-    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
-        max_col = index_to_col(col_to_index(max_col) + 1)
-    else:
-        break
+def extraccion_tablas(col_inicio,col_datos_inicio,col_excluir,  fila_ini, fila_finak, detalle):
+    # Determinar la última columna con datos empezando desde 'BYT'
+    max_col = col_datos_inicio
+    while True:
+        if any(hoja_formato[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+            max_col = index_to_col(col_to_index(max_col) + 1)
+        else:
+            break
 
-max_col = index_to_col(col_to_index(max_col) - 1)  # Retroceder una columna, ajuste correcto
+    max_col = index_to_col(col_to_index(max_col) - 1)  # Retroceder una columna, ajuste correcto
 
-# Leer los datos
-data = []
-index_values = []
-for fila in range(fila_inicio, fila_fin + 1):
-    row_data = []
-    col = col_datos_inicio
-    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
-    while col != index_to_col(col_to_index(max_col) + 1):  # Usar funciones para controlar el rango correctamente
-        if col != col_excluir:
-            celda = f'{col}{fila}'
-            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
-        col = index_to_col(col_to_index(col) + 1)
-    data.append(row_data)
+    # Leer los datos
+    data = []
+    index_values = []
+    for fila in range(fila_inicio, fila_fin + 1):
+        row_data = []
+        col = col_datos_inicio
+        index_values.append(hoja_formato[f'{col_inicio}{fila}'].value if hoja_formato[f'{col_inicio}{fila}'].value is not None else "N/A")
+        while col != index_to_col(col_to_index(max_col) + 1):  # Usar funciones para controlar el rango correctamente
+            if col != col_excluir:
+                celda = f'{col}{fila}'
+                row_data.append(hoja_formato[celda].value if hoja_formato[celda].value is not None else "N/A")
+            col = index_to_col(col_to_index(col) + 1)
+        data.append(row_data)
+
+    num_columns = len(data[0])
+    column_names = [f"{detalle} {i+1}" for i in range (num_columns)]
+
+
+    # Crear el DataFrame
+    return pd.DataFrame(data, columns = column_names, index = index_values)
+
+col_inicio = 'BYR'  # Columna para índices
+col_datos_inicio = 'BYT'  # Columna inicial para datos
+col_excluir = 'BYS'  # Columna para excluir
+
+###########################ENCABEZADO: Fecha de la información.
+
+
+fila_inicio = 9
+fila_fin = 9
+detalle = "Fecha"
+
+fecha_info = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+fecha_info.rename(columns = {"Fecha 1": "Fecha"}, inplace=True)
+
+###########################SUBENCABEZADO: Identificación del Instrumento Estructurado.
+
+fila_inicio = 13
+fila_fin = 18
+detalle = "Identificación del Instrumento"
+
+identificador = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+identificador.rename(columns = {"Identificación del Instrumento 1": "Identificación del Instrumento Estructurado"}, inplace=True)
+
+index_rename = {identificador.index[0]: "ISIN", identificador.index[1]: "Tipo Valor", identificador.index[4]: "Ticker Bloomberg", identificador.index[5]: "Ticker Reuters"}
+identificador.rename(index=index_rename, inplace=True)
+
+nombre_instrumento = identificador.loc["Tipo Valor"].values[0] + "_" + identificador.loc["Emisora"].values[0] + "_" + identificador.loc["Serie"].values[0]
+
+identificador.drop(identificador.columns[1], axis=1, inplace=True)
+
+###########################SUBENCABEZADO: Identificación del Instrumento Estructurado.
+
+fila_inicio = 22
+fila_fin = 43
+detalle = "Información General del Instrumento"
+
+info_general = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+index_rename = {info_general.index[14]: "InstrumentoSerieAdicional_Tipo_Valor", info_general.index[15]: "InstrumentoSerieAdicional_Emisor", info_general.index[16]: "InstrumentoSerieAdicional_Serie"}
+info_general.rename(index=index_rename, inplace=True)
+
+info_general.rename(columns = {"Información General del Instrumento 1": "Información General del Instrumento Estructurado"}, inplace=True)
+
+##### DETALLE 2: Información de los proyectos o inversiones en los que participa el Instrumento Estructurado.
+
+fila_inicio = 49
+fila_fin = 71
+detalle = "Inversión"
+
+detalle_2 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+index_rename = {detalle_2.index[1]: "Inversion_Tipo_Valor", detalle_2.index[2]: "Inversion_Emisor", 
+                detalle_2.index[3]: "Inversion_Serie", detalle_2.index[6]: "Monto Total Invertido", 
+                detalle_2.index[8]: "Participación del Instrumento Estructurado en el proyecto de inversión", 
+                detalle_2.index[9]: "Participación del proyecto en el Instrumento Estructurado",
+                detalle_2.index[19]: "Valor Total del Proyecto Financiado"}
+detalle_2.rename(index=index_rename, inplace=True)
 
 
 
-Entendido, si deseas renombrar los índices del DataFrame y no las columnas, y quieres que los índices específicos (segundo, tercero y cuarto) sean renombrados a "Tipo_Valor", "Emisor", y "Serie", respectivamente, ajustaremos el código correspondientemente.
+##########################DETALLE 3: Información de los activos financieros o proyectos promovidos, que componen los fondos de inversión (Private equity fund, venture capital fund o similar).
 
-Paso a Paso para Renombrar Índices Específicos del DataFrame
-Vamos a modificar el DataFrame después de su creación para cambiar los nombres de los índices específicos como solicitado.
+fila_inicio = 79
+fila_fin = 90
+detalle = "Inversión"
 
-Código Ajustado para Renombrar Índices:
-python
-Copy code
-from openpyxl import load_workbook
-import pandas as pd
+detalle_3 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
 
-# Funciones auxiliares para manejar índices de columnas de Excel
-def col_to_index(col):
-    index = 0
-    for c in col:
-        index = index * 26 + (ord(c.upper()) - ord('A') + 1)
-    return index - 1
+##########################DETALLE 4: Información de los gastos o comisiones devengados del Instrumento Estructurado.
 
-def index_to_col(idx):
-    col = ''
-    while idx >= 0:
-        idx, remainder = divmod(idx, 26)
-        col = chr(remainder + 65) + col
-        idx -= 1
-    return col
+fila_inicio = 103
+fila_fin = 107
+detalle = "Gasto/Comisión"
 
-# Cargar el libro de Excel
-wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
-hoja = wb['NombreDeLaHoja']
+detalle_4 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
 
-# Configuración de columnas y filas
-col_inicio = 'BYR'  # Índice
-col_datos_inicio = 'BYT'  # Datos inician aquí
-col_excluir = 'BYS'  # Columna excluida
-fila_inicio = 52
-fila_fin = 56
+##########################DETALLE 5: Información de los Coinversionistas que participan en cada una de las inversiones o proyectos promovidos reportados en el DETALLE 2 por el Instrumento Estructurado.
+fila_inicio = 113
+fila_fin = 117
+detalle = "Inversión"
 
-# Determinar la última columna con datos
-max_col = col_datos_inicio
-while True:
-    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
-        max_col = index_to_col(col_to_index(max_col) + 1)
-    else:
-        break
-max_col = index_to_col(col_to_index(max_col) - 1)
+detalle_5 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
 
-# Leer los datos
-data = []
-index_values = []
-for fila in range(fila_inicio, fila_fin + 1):
-    row_data = []
-    col = col_datos_inicio
-    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
-    while col != index_to_col(col_to_index(max_col) + 1):
-        if col != col_excluir:
-            celda = f'{col}{fila}'
-            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
-        col = index_to_col(col_to_index(col) + 1)
-    data.append(row_data)
 
-# Crear el DataFrame
-column_names = [f'Inversión {i+1}' for i in range(len(data[0]))]
-df = pd.DataFrame(data, columns=column_names, index=index_values)
+index_rename = {detalle_5.index[3]: "Participación del Tipo de Coinversionista en el proyecto"}
+detalle_5.rename(index=index_rename, inplace=True)
 
-# Cambiar nombres específicos de los índices
-index_rename = {df.index[1]: "Tipo_Valor", df.index[2]: "Emisor", df.index[3]: "Serie"}
-df.rename(index=index_rename, inplace=True)
-# Crear el DataFrame
-df = pd.DataFrame(data, columns=[hoja[f'{index_to_col(col_to_index(col_datos_inicio) + i)}{fila_inicio}'].value for i in range(col_to_index(max_col) - col_to_index(col_datos_inicio) + 1) if index_to_col(col_to_index(col_datos_inicio) + i) != col_excluir], index=index_values)
+#########################DETALLE 6: Información de las llamadas de capital y/o derechos de suscripción realizados del Instrumento Estructurado.
+fila_inicio = 123
+fila_fin = 130
+detalle = "Llamada de Capital"
 
-################
+detalle_6 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+#########################DETALLE 6: Información de las llamadas de capital y/o derechos de suscripción realizados del Instrumento Estructurado.
+fila_inicio = 136
+fila_fin = 142
+detalle = "Distribución del Instrumento"
+
+detalle_A = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+detalle_A.rename(columns = {"Distribución del Instrumento 1": "Distribuciones del Instrumento Estructurado"}, inplace=True)
+
+
+###creacion dict
+
 # Creando el diccionario con estructura anidada
 instrumento_dict = {
-    "1R": {
-        "Información Perteneciente al Instrumento": {
-            "Fecha_Informacion": df1,
-            "Info_Identificador": df2,
-            "Info_General": df3,
-            "Proyectos_Participantes": df4,
-            "Activos_Composicion": df5,
-            "Gastos_Comisiones": df6,
-            "Llamadas_Capital": df7
-        }
-    }
+    "CLIENT_ID":nombre_instrumento, 
+    "Fecha_Informacion": fecha_info,
+    "Info_Identificador": identificador,
+    "Informacion_General":info_general,
+    "Proyectos_Participantes": detalle_2,
+    "Activos_Composicion": detalle_3,
+    "Gastos_Comisiones": detalle_4,
+    "Coinversionistas": detalle_5,
+    "Llamadas_Capital": detalle_6,
+    "Distribuciones Pagadas": detalle_A
 }
+    
+def dataframe_to_item_list(df):
+    return df.to_dict('records')  # Convierte el dataframe en una lista de diccionarios
 
+# Convirtiendo cada DataFrame en una lista de diccionarios
+items_info_identificador = dataframe_to_item_list(instrumento_dict["Info_Identificador"])
+items_informacion_general = dataframe_to_item_list(instrumento_dict["Informacion_General"])
+items_proyectos_participantes = dataframe_to_item_list(instrumento_dict["Proyectos_Participantes"])
+items_activos_composicion = dataframe_to_item_list(instrumento_dict["Activos_Composicion"])
+items_gastos_comisiones = dataframe_to_item_list(instrumento_dict["Gastos_Comisiones"])
+items_coinversionistas = dataframe_to_item_list(instrumento_dict["Coinversionistas"])
+items_llamadas_capital = dataframe_to_item_list(instrumento_dict["Llamadas_Capital"])
+items_distribuciones_pagadas = dataframe_to_item_list(instrumento_dict["Distribuciones Pagadas"])
