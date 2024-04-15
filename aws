@@ -24,3 +24,5 @@ import boto3
 dynamodb = boto3.client('dynamodb', region_name='tu-region')
 response = dynamodb.describe_table(TableName='NombreDeTuTabla')
 print(response['Table']['KeySchema'])
+
+[{'AttributeName': 'CLIENT_ID', 'KeyType': 'HASH'}]
