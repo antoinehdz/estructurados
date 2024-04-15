@@ -56,3 +56,53 @@ for key, value in data_rows.items():
 wb.save(filename='ruta/a/tu/archivo_modificado.xlsx')
 wb.close()
 
+from openpyxl import load_workbook
+import pandas as pd
+
+# Cargar el libro de Excel, asegurándose de obtener valores en lugar de fórmulas
+wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
+hoja = wb['NombreDeLaHoja']
+
+# Configuración inicial
+col_inicio = 'BYR'  # Iniciar desde la columna 'BYR'
+col_encabezados = 'BYT'  # Los encabezados están en 'BYT'
+fila_inicio = 52
+fila_fin = 56
+
+# Determinar la última columna con datos
+max_col = col_encabezados
+while True:
+    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+        max_col = next_col(max_col)  # Usar función next_col definida anteriormente
+    else:
+        break
+
+# Ajustar a la última columna útil
+max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
+
+# Leer los datos incluyendo la fila 52 como encabezados
+data = []
+index_values = []
+for fila in range(fila_inicio, fila_fin + 1):
+    row_data = []
+    col = col_encabezados
+    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")  # Guardar índice
+    while col != next_col(max_col):
+        celda = f'{col}{fila}'
+        row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
+        col = next_col(col)
+    data.append(row_data)
+
+# Crear el DataFrame usando la primera fila (fila 52) como encabezados de columna
+df = pd.DataFrame(data, columns=data[0], index=index_values)  # Establecer index_values como el índice del DataFrame
+
+# Mostrar el DataFrame para verificación
+print(df)
+
+# Opcional: Guardar el DataFrame a un archivo CSV
+df.to_csv('output.csv', index_label='BYR')
+
+# Cerrar el workbook
+wb.close()
+
+
