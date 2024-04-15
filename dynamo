@@ -148,6 +148,43 @@ detalle_6 = convert_floats_to_decimals(detalle_6)
 detalle_A = convert_floats_to_decimals(detalle_A)
 
 
+########################
+from decimal import Decimal
+import pandas as pd
+import datetime
+
+def convert_to_dynamodb_format(obj):
+    """
+    Recursivamente convierte objetos en un formato compatible con DynamoDB.
+    - Convierte floats a Decimals.
+    - Convierte datetime.datetime a strings en formato ISO 8601.
+    """
+    if isinstance(obj, pd.DataFrame):  # Si el objeto es un DataFrame
+        for column in obj:
+            obj[column] = obj[column].apply(convert_to_dynamodb_format)
+        return obj
+    elif isinstance(obj, list):  # Si el objeto es una lista
+        return [convert_to_dynamodb_format(x) for x in obj]
+    elif isinstance(obj, float):  # Si el objeto es un float
+        return Decimal(str(obj))
+    elif isinstance(obj, datetime.datetime):  # Si el objeto es un datetime
+        return obj.isoformat()
+    elif isinstance(obj, dict):  # Si el objeto es un diccionario
+        return {k: convert_to_dynamodb_format(v) for k, v in obj.items()}
+    return obj
+
+fecha_info = convert_to_dynamodb_format(fecha_info)
+identificador = convert_to_dynamodb_format(identificador)
+info_general = convert_to_dynamodb_format(info_general)
+detalle_2 = convert_to_dynamodb_format(detalle_2)
+detalle_3 = convert_to_dynamodb_format(detalle_3)
+detalle_4 = convert_to_dynamodb_format(detalle_4)
+detalle_5 = convert_to_dynamodb_format(detalle_5)
+detalle_6 = convert_to_dynamodb_format(detalle_6)
+detalle_A = convert_to_dynamodb_format(detalle_A)
+
+
+
 
 
 # Inicializar el cliente de DynamoDB y subir el ítem
