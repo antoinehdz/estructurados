@@ -1,18 +1,23 @@
-import requests
+import quandl
 
-def obtener_datos_alpha_vantage(ticker, api_key):
-    URL = "https://www.alphavantage.co/query"
-    PARAMS = {
-        "function": "TIME_SERIES_DAILY_ADJUSTED",
-        "symbol": ticker,
-        "apikey": vnvzXvY1UgpAugKz5pML,
-        "outputsize": "full"  # o "compact" para los últimos 100 puntos de datos
-    }
+def descargar_datos_quandl(ticker):
+    """
+    Descarga datos históricos para un índice utilizando Quandl.
     
-    response = requests.get(URL, params=PARAMS)
-    data = response.json()  # Suponiendo que la respuesta es en formato JSON
+    Args:
+    ticker (str): Ticker del índice a descargar.
+    
+    Returns:
+    DataFrame: Un DataFrame con los datos históricos.
+    """
+    # Configura tu "api_key" personal de Quandl
+    quandl.ApiConfig.api_key = 'tu_api_key'
+    
+    # Obtener datos
+    data = quandl.get(ticker, start_date='2023-01-01', end_date='2023-01-31')
     return data
 
-api_key = 'your_api_key_here'
-datos_av = obtener_datos_alpha_vantage("IRTCOMPMX.MX", api_key)
-print(datos_av)
+# Ejemplo de uso
+ticker = "BSE/BOM503805"  # Debes encontrar el código correcto para IRTCOMP en Quandl
+datos_hist = descargar_datos_quandl(ticker)
+print(datos_hist)
