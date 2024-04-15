@@ -113,6 +113,25 @@ item_to_insert = {
     }
 }
 
+
+#arreglo float
+
+def convert_floats(df):
+    for col in df.columns:
+        if pd.api.types.is_float_dtype(df[col]):
+            df[col] = df[col].apply(lambda x: Decimal(str(x)) if pd.notnull(x) else x)
+    return df
+fecha_info = convert_floats(fecha_info)
+identificador = convert_floats(identificador)
+info_general = convert_floats(info_general)
+detalle_2 = convert_floats(detalle_2)
+detalle_3 = convert_floats(detalle_3)
+detalle_4 = convert_floats(detalle_4)
+detalle_5 = convert_floats(detalle_5)
+detalle_6 = convert_floats(detalle_6)
+detalle_A = convert_floats(detalle_A)
+
+
 # Inicializar el cliente de DynamoDB y subir el ítem
 dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
 table = dynamodb.Table('NombreDeTuTabla')
