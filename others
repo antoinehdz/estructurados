@@ -5,7 +5,7 @@ def obtener_datos_alpha_vantage(ticker, api_key):
     PARAMS = {
         "function": "TIME_SERIES_DAILY_ADJUSTED",
         "symbol": ticker,
-        "apikey": api_key,
+        "apikey": G38X1TILZBYHAK90,
         "outputsize": "full"  # o "compact" para los últimos 100 puntos de datos
     }
     
