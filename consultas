@@ -1,0 +1,13 @@
+import boto3
+
+def get_item(client_id):
+    dynamodb = boto3.resource('dynamodb', region_name='tu-region')
+    table = dynamodb.Table('NombreDeTuTabla')
+    
+    response = table.get_item(Key={'CLIENT_ID': client_id})
+    item = response.get('Item', {})
+    if item:
+        return item
+    else:
+        print("No item found with CLIENT_ID:", client_id)
+        return None
