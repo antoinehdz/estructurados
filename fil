@@ -272,4 +272,19 @@ df.rename(index=index_rename, inplace=True)
 # Crear el DataFrame
 df = pd.DataFrame(data, columns=[hoja[f'{index_to_col(col_to_index(col_datos_inicio) + i)}{fila_inicio}'].value for i in range(col_to_index(max_col) - col_to_index(col_datos_inicio) + 1) if index_to_col(col_to_index(col_datos_inicio) + i) != col_excluir], index=index_values)
 
+################
+# Creando el diccionario con estructura anidada
+instrumento_dict = {
+    "1R": {
+        "Información Perteneciente al Instrumento": {
+            "Fecha_Informacion": df1,
+            "Info_Identificador": df2,
+            "Info_General": df3,
+            "Proyectos_Participantes": df4,
+            "Activos_Composicion": df5,
+            "Gastos_Comisiones": df6,
+            "Llamadas_Capital": df7
+        }
+    }
+}
 
