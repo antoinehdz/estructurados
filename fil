@@ -1,0 +1,58 @@
+def next_col(col):
+    """ Incrementa un nombre de columna de Excel (e.g., 'A' -> 'B', 'Z' -> 'AA'). """
+    if col == '': return 'A'
+    last_char = col[-1]
+    if last_char != 'Z':  # Si no es la última letra
+        return col[:-1] + chr(ord(last_char) + 1)
+    else:  # Si es la última letra
+        return next_col(col[:-1]) + 'A'
+
+# Ejemplo de uso:
+print(next_col('A'))  # Debería imprimir 'B'
+print(next_col('Z'))  # Debería imprimir 'AA'
+print(next_col('AZ')) # Debería imprimir 'BA'
+print(next_col('ZZ')) # Debería imprimir 'AAA'
+
+
+from openpyxl import load_workbook
+
+# Cargar el libro de Excel
+wb = load_workbook(filename='ruta/a/tu/archivo.xlsx')
+hoja = wb['NombreDeLaHoja']  # Asegúrate de usar el nombre correcto de la hoja
+
+# Configuración inicial
+col_inicio = 'BYT'
+fila_inicio = 52
+fila_fin = 56
+
+# Encontrar hasta qué columna leer
+max_col = col_inicio
+while True:
+    # Checar si alguna celda en el rango tiene datos
+    if any(hoja[f'{max_col}{fila}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+        max_col = next_col(max_col)  # Moverse a la siguiente columna utilizando la función corregida
+    else:
+        break
+
+# Corregir para quedarse con la última columna con datos (retroceder uno porque el loop se pasa uno)
+max_col = chr(ord(max_col) - 1) if len(max_col) == 1 else max_col[:-1] + chr(ord(max_col[-1]) - 1)
+
+# Leer los datos
+data_rows = {}
+for fila in range(fila_inicio, fila_fin + 1):
+    valores_fila = []
+    col = col_inicio
+    while col != next_col(max_col):  # Usar la función para detener correctamente
+        celda = f'{col}{fila}'
+        valores_fila.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
+        col = next_col(col)  # Incrementar columna
+    data_rows[f'Fila {fila}'] = valores_fila
+
+# Imprimir los datos extraídos
+for key, value in data_rows.items():
+    print(f"{key}: {value}")
+
+# Guardar y cerrar el libro
+wb.save(filename='ruta/a/tu/archivo_modificado.xlsx')
+wb.close()
+
