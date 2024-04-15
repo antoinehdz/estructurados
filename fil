@@ -1,6 +1,18 @@
 identificador.at[1, 'A'] + identificador.at[2, 'A'] + identificador.at[3, 'A']
 
-
+instrumento_dict = {
+    "CLIENT_ID":nombre_instrumento, 
+    "Fecha_Informacion": fecha_info,
+    "Info_Identificador": identificador,
+    "Informacion_General":info_general,
+    "Proyectos_Participantes": detalle_2,
+    "Activos_Composicion": detalle_3,
+    "Gastos_Comisiones": detalle_4,
+    "Coinversionistas": detalle_5,
+    "Llamadas_Capital": detalle_6,
+    "Distribuciones Pagadas": detalle_A
+}
+    
 
 def next_col(col):
     """ Incrementa un nombre de columna de Excel (e.g., 'A' -> 'B', 'Z' -> 'AA'). """
