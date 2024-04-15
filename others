@@ -1,23 +1,38 @@
-import quandl
+import investpy
+import pandas as pd
+from datetime import datetime
 
-def descargar_datos_quandl(ticker):
+def obtener_datos_investpy(indice, pais, desde, hasta):
     """
-    Descarga datos históricos para un índice utilizando Quandl.
+    Obtiene datos históricos de un índice específico utilizando investpy.
     
     Args:
-    ticker (str): Ticker del índice a descargar.
+    indice (str): Nombre del índice, como aparece en Investing.com.
+    pais (str): País del índice.
+    desde (str): Fecha de inicio en formato 'dd/mm/yyyy'.
+    hasta (str): Fecha de finalización en formato 'dd/mm/yyyy'.
     
     Returns:
-    DataFrame: Un DataFrame con los datos históricos.
+    pandas.DataFrame: DataFrame con los datos históricos del índice.
     """
-    # Configura tu "api_key" personal de Quandl
-    quandl.ApiConfig.api_key = 'tu_api_key'
-    
-    # Obtener datos
-    data = quandl.get(ticker, start_date='2023-01-01', end_date='2023-01-31')
-    return data
+    try:
+        data = investpy.indices.get_index_historical_data(index=indice,
+                                                          country=pais,
+                                                          from_date=desde,
+                                                          to_date=hasta,
+                                                          as_json=False,
+                                                          order='ascending')
+        return data
+    except Exception as e:
+        print("Error al obtener los datos:", e)
+        return None
 
-# Ejemplo de uso
-ticker = "BSE/BOM503805"  # Debes encontrar el código correcto para IRTCOMP en Quandl
-datos_hist = descargar_datos_quandl(ticker)
+# Definir parámetros para la búsqueda
+indice = 'S&P/BMV IPC'  # Asegúrate de usar el nombre exacto del índice como se define en Investing.com
+pais = 'mexico'
+desde = '01/01/2023'  # Ejemplo: Desde el inicio de 2023
+hasta = datetime.now().strftime('%d/%m/%Y')  # Hasta la fecha actual
+
+# Obtener los datos
+datos_hist = obtener_datos_investpy(indice, pais, desde, hasta)
 print(datos_hist)
