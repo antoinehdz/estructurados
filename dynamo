@@ -1,0 +1,19 @@
+client_id = "ID_del_Instrumento"  # Este debe ser un identificador único adecuado a tu caso de uso
+
+def add_client_id_to_items(items, client_id):
+    """
+    Añade el CLIENT_ID a cada ítem en la lista de diccionarios
+    """
+    for item in items:
+        item['CLIENT_ID'] = client_id
+    return items
+
+# Añadir CLIENT_ID a cada lista de ítems
+items_info_identificador = add_client_id_to_items(items_info_identificador, client_id)
+items_informacion_general = add_client_id_to_items(items_informacion_general, client_id)
+items_proyectos_participantes = add_client_id_to_items(items_proyectos_participantes, client_id)
+items_activos_composicion = add_client_id_to_items(items_activos_composicion, client_id)
+items_gastos_comisiones = add_client_id_to_items(items_gastos_comisiones, client_id)
+items_coinversionistas = add_client_id_to_items(items_coinversionistas, client_id)
+items_llamadas_capital = add_client_id_to_items(items_llamadas_capital, client_id)
+items_distribuciones_pagadas = add_client_id_to_items(items_distribuciones_pagadas, client_id)
