@@ -159,5 +159,48 @@ df.to_csv('output.csv', index_label='BYR')
 # Cerrar el workbook
 wb.close()
 
+##################################
+def col_to_index(col):
+    """Convert Excel column letters to zero-indexed number."""
+    index = 0
+    for c in col:
+        index = index * 26 + (ord(c.upper()) - ord('A') + 1)
+    return index - 1
+
+def index_to_col(idx):
+    """Convert zero-indexed number to Excel column letters."""
+    col = ''
+    while idx >= 0:
+        idx, remainder = divmod(idx, 26)
+        col = chr(remainder + 65) + col
+        idx -= 1
+    return col
+
+# Determinar la última columna con datos empezando desde 'BYT'
+max_col = col_datos_inicio
+while True:
+    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+        max_col = index_to_col(col_to_index(max_col) + 1)
+    else:
+        break
+
+max_col = index_to_col(col_to_index(max_col) - 1)  # Retroceder una columna, ajuste correcto
+
+# Leer los datos
+data = []
+index_values = []
+for fila in range(fila_inicio, fila_fin + 1):
+    row_data = []
+    col = col_datos_inicio
+    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
+    while col != index_to_col(col_to_index(max_col) + 1):  # Usar funciones para controlar el rango correctamente
+        if col != col_excluir:
+            celda = f'{col}{fila}'
+            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
+        col = index_to_col(col_to_index(col) + 1)
+    data.append(row_data)
+
+# Crear el DataFrame
+df = pd.DataFrame(data, columns=[hoja[f'{index_to_col(col_to_index(col_datos_inicio) + i)}{fila_inicio}'].value for i in range(col_to_index(max_col) - col_to_index(col_datos_inicio) + 1) if index_to_col(col_to_index(col_datos_inicio) + i) != col_excluir], index=index_values)
 
 
