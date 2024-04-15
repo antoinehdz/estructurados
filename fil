@@ -200,6 +200,75 @@ for fila in range(fila_inicio, fila_fin + 1):
         col = index_to_col(col_to_index(col) + 1)
     data.append(row_data)
 
+
+
+Entendido, si deseas renombrar los índices del DataFrame y no las columnas, y quieres que los índices específicos (segundo, tercero y cuarto) sean renombrados a "Tipo_Valor", "Emisor", y "Serie", respectivamente, ajustaremos el código correspondientemente.
+
+Paso a Paso para Renombrar Índices Específicos del DataFrame
+Vamos a modificar el DataFrame después de su creación para cambiar los nombres de los índices específicos como solicitado.
+
+Código Ajustado para Renombrar Índices:
+python
+Copy code
+from openpyxl import load_workbook
+import pandas as pd
+
+# Funciones auxiliares para manejar índices de columnas de Excel
+def col_to_index(col):
+    index = 0
+    for c in col:
+        index = index * 26 + (ord(c.upper()) - ord('A') + 1)
+    return index - 1
+
+def index_to_col(idx):
+    col = ''
+    while idx >= 0:
+        idx, remainder = divmod(idx, 26)
+        col = chr(remainder + 65) + col
+        idx -= 1
+    return col
+
+# Cargar el libro de Excel
+wb = load_workbook(filename='ruta/a/tu/archivo.xlsx', data_only=True)
+hoja = wb['NombreDeLaHoja']
+
+# Configuración de columnas y filas
+col_inicio = 'BYR'  # Índice
+col_datos_inicio = 'BYT'  # Datos inician aquí
+col_excluir = 'BYS'  # Columna excluida
+fila_inicio = 52
+fila_fin = 56
+
+# Determinar la última columna con datos
+max_col = col_datos_inicio
+while True:
+    if any(hoja[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+        max_col = index_to_col(col_to_index(max_col) + 1)
+    else:
+        break
+max_col = index_to_col(col_to_index(max_col) - 1)
+
+# Leer los datos
+data = []
+index_values = []
+for fila in range(fila_inicio, fila_fin + 1):
+    row_data = []
+    col = col_datos_inicio
+    index_values.append(hoja[f'{col_inicio}{fila}'].value if hoja[f'{col_inicio}{fila}'].value is not None else "N/A")
+    while col != index_to_col(col_to_index(max_col) + 1):
+        if col != col_excluir:
+            celda = f'{col}{fila}'
+            row_data.append(hoja[celda].value if hoja[celda].value is not None else "N/A")
+        col = index_to_col(col_to_index(col) + 1)
+    data.append(row_data)
+
+# Crear el DataFrame
+column_names = [f'Inversión {i+1}' for i in range(len(data[0]))]
+df = pd.DataFrame(data, columns=column_names, index=index_values)
+
+# Cambiar nombres específicos de los índices
+index_rename = {df.index[1]: "Tipo_Valor", df.index[2]: "Emisor", df.index[3]: "Serie"}
+df.rename(index=index_rename, inplace=True)
 # Crear el DataFrame
 df = pd.DataFrame(data, columns=[hoja[f'{index_to_col(col_to_index(col_datos_inicio) + i)}{fila_inicio}'].value for i in range(col_to_index(max_col) - col_to_index(col_datos_inicio) + 1) if index_to_col(col_to_index(col_datos_inicio) + i) != col_excluir], index=index_values)
 
