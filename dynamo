@@ -41,3 +41,37 @@ upload_batch(items_gastos_comisiones)
 upload_batch(items_coinversionistas)
 upload_batch(items_llamadas_capital)
 upload_batch(items_distribuciones_pagadas)
+
+
+####################3
+import boto3
+import pandas as pd
+
+# Supongamos que todos los DataFrames ya están inicializados como se describió anteriormente
+
+def dataframe_to_dict(df):
+    """Convertir DataFrame a lista de diccionarios para compatibilidad con DynamoDB."""
+    return df.to_dict(orient='records')
+
+# Preparación del ítem
+item_to_insert = {
+    "CLIENT_ID": "1_R-X",
+    "Informacion_Instrumento": {
+        "CLIENT_ID": "Nombre del Instrumento",  # Asumiendo que es un string
+        "Fecha_Informacion": dataframe_to_dict(fecha_info),
+        "Info_Identificador": dataframe_to_dict(identificador),
+        "Informacion_General": dataframe_to_dict(info_general),
+        "Proyectos_Participantes": dataframe_to_dict(detalle_2),
+        "Activos_Composicion": dataframe_to_dict(detalle_3),
+        "Gastos_Comisiones": dataframe_to_dict(detalle_4),
+        "Coinversionistas": dataframe_to_dict(detalle_5),
+        "Llamadas_Capital": dataframe_to_dict(detalle_6),
+        "Distribuciones Pagadas": dataframe_to_dict(detalle_A)
+    }
+}
+
+# Subir el ítem
+dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
+table = dynamodb.Table('NombreDeTuTabla')
+table.put_item(Item=item_to_insert)
+
