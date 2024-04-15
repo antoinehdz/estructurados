@@ -1,0 +1,25 @@
+import boto3
+
+# Inicializando el cliente de DynamoDB
+dynamodb = boto3.resource('dynamodb', region_name='tu-region')
+table = dynamodb.Table('NombreDeTuTabla')  # Asegúrate de que la tabla está correctamente configurada
+
+# Función para subir un lote de items a DynamoDB
+def upload_batch(batch_items, category):
+    with table.batch_writer() as batch:
+        for item in batch_items:
+            item['Category'] = category  # Añade una categoría si es necesario distinguir los items
+            batch.put_item(Item=item)
+
+# Subiendo cada lote de items
+upload_batch(items_info_identificador, "Info_Identificador")
+upload_batch(items_informacion_general, "Informacion_General")
+upload_batch(items_proyectos_participantes, "Proyectos_Participantes")
+upload_batch(items_activos_composicion, "Activos_Composicion")
+upload_batch(items_gastos_comisiones, "Gastos_Comisiones")
+upload_batch(items_coinversionistas, "Coinversionistas")
+upload_batch(items_llamadas_capital, "Llamadas_Capital")
+upload_batch(items_distribuciones_pagadas, "Distribuciones Pagadas")
+
+# Subir el CLIENT_ID por separado si es necesario
+table.put_item(Item={"Category": "Client_ID", "ID": instrumento_dict["CLIENT_ID"]})
