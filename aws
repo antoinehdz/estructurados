@@ -17,3 +17,10 @@ items_info_identificador = [{'YourPartitionKey': 'SpecificCategory', 'YourSortKe
 
 # Subir datos
 upload_batch(items_info_identificador, "Info_Identificador")
+
+#validador
+import boto3
+
+dynamodb = boto3.client('dynamodb', region_name='tu-region')
+response = dynamodb.describe_table(TableName='NombreDeTuTabla')
+print(response['Table']['KeySchema'])
