@@ -3,6 +3,9 @@ import pandas as pd
 from collections import OrderedDict
 import datetime
 
+[{'Variables': 'Fecha de información', 'Fecha': '2024-03-27T00:00:00'}]
+
+
 def convert_to_dynamodb_format(obj):
     """
     Convierte objetos en un formato compatible con DynamoDB.
