@@ -1,28 +1,94 @@
-import boto3
 import pandas as pd
-
-# Inicializando el cliente de DynamoDB
-dynamodb = boto3.resource('dynamodb', region_name='tu-region')
-table = dynamodb.Table('NombreDeTuTabla')  # Asegúrate de que la tabla está correctamente configurada
-
-def upload_batch(batch_items, category):
-    with table.batch_writer() as batch:
-        for item in batch_items:
-            item['Category'] = category
-            item['YourSortKey'] = 'SpecificValue'  # Ajustar según la clave de ordenación definida
-            batch.put_item(Item=item)
-
-# Convertir DataFrames a listas de diccionarios e incluir claves primarias
-items_info_identificador = [{'YourPartitionKey': 'SpecificCategory', 'YourSortKey': 'SpecificValue', 'Data': item} for item in dataframe_to_item_list(instrumento_dict["Info_Identificador"])]
-
-# Subir datos
-upload_batch(items_info_identificador, "Info_Identificador")
-
-#validador
+from openpyxl import load_workbook
+import re
+from decimal import Decimal
+import datetime
 import boto3
 
-dynamodb = boto3.client('dynamodb', region_name='tu-region')
-response = dynamodb.describe_table(TableName='NombreDeTuTabla')
-print(response['Table']['KeySchema'])
+# Definición de funciones necesarias
+def col_to_index(col):
+    """Convert Excel column letters to zero-indexed number."""
+    index = 0
+    for c in col:
+        index = index * 26 + (ord(c.upper()) - ord('A') + 1)
+    return index - 1
 
-[{'AttributeName': 'CLIENT_ID', 'KeyType': 'HASH'}]
+def index_to_col(idx):
+    """Convert zero-indexed number to Excel column letters."""
+    col = ''
+    while idx >= 0:
+        idx, remainder = divmod(idx, 26)
+        col = chr(remainder + 65) + col
+        idx -= 1
+    return col
+
+def extract_number(col):
+    """Extract trailing number from a string or return the string if no number is present."""
+    match = re.search(r'(\d+)$', col)
+    return int(match.group(1)) if match else col
+
+def convert_to_dynamodb_format(obj):
+    """Converts pandas objects to formats compatible with DynamoDB, particularly datetime and floats."""
+    if isinstance(obj, pd.Timestamp):
+        return obj.strftime('%Y-%m-%dT%H:%M:%S')
+    elif isinstance(obj, (float, np.float64)):
+        return Decimal(str(obj))
+    elif isinstance(obj, pd.DataFrame):
+        return obj.applymap(convert_to_dynamodb_format).to_dict('records')  # Convert DataFrame to list of dicts
+    return obj
+
+# Carga de datos desde Excel
+ruta_prospectos = "ruta/a/tu/archivo/"
+archivo = "nombre_de_archivo.xlsx"
+wb = load_workbook(ruta_prospectos + archivo, data_only=True)
+hoja_formato = wb["Formato"]
+
+col_inicio = 'BYR'
+col_datos_inicio = 'BYT'
+col_excluir = 'BYS'
+
+# Función para extraer tablas
+def extraccion_tablas(col_inicio, col_datos_inicio, col_excluir, fila_ini, fila_fin, detalle):
+    max_col = col_datos_inicio
+    while True:
+        if any(hoja_formato[f'{max_col}{fila_ini}'].value is not None for fila in range(fila_ini, fila_fin + 1)):
+            max_col = index_to_col(col_to_index(max_col) + 1)
+        else:
+            break
+
+    max_col = index_to_col(col_to_index(max_col) - 1)  # Correct adjustment
+    data = []
+    for fila in range(fila_ini, fila_fin + 1):
+        row_data = []
+        col = col_datos_inicio
+        while col != index_to_col(col_to_index(max_col) + 1):
+            if col != col_excluir:
+                celda = f'{col}{fila}'
+                row_data.append(hoja_formato[celda].value if hoja_formato[celda].value is not None else "N/A")
+            col = index_to_col(col_to_index(col) + 1)
+        data.append(tuple(row_data))  # Append as tuple to maintain order
+
+    column_names = [f"{detalle} {i+1}" for i in range(len(data[0]))]  # Maintain column order
+    return pd.DataFrame(data, columns=column_names)
+
+# Ejemplo de uso
+detalle = "Información General del Instrumento"
+fila_inicio = 22
+fila_fin = 43
+info_general = extraccion_tablas(col_inicio, col_datos_inicio, col_excluir, fila_inicio, fila_fin, detalle)
+info_general = info_general.applymap(convert_to_dynamodb_format)  # Convert all data for DynamoDB compatibility
+
+# Subida a DynamoDB (ejemplo con Boto3)
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('TuTablaDynamoDB')
+with table.batch_writer() as batch:
+    for index, row in info_general.iterrows():
+        item = row.to_dict()
+        batch.put_item(Item=item)
+
+# Consulta de datos y reconstrucción del DataFrame con orden específico
+queried_items = [{"Información General del Instrumento 1": "Valor1", ...}]  # Simulación de datos consultados
+queried_df = pd.DataFrame(queried_items)
+queried_df = queried_df[[f"Información General del Instrumento {i+1}" for i in range(len(queried_df.columns))]]  # Reordering columns explicitly
+
+print(queried_df)
