@@ -14,3 +14,35 @@ def convert_to_dynamodb_format(obj):
     elif isinstance(obj, pd.DataFrame):
         return [obj.iloc[i].to_dict(into=OrderedDict) for i in range(len(obj))]
     return obj
+
+
+import pandas as pd
+from collections import OrderedDict
+
+def extraccion_tablas(col_inicio, col_datos_inicio, col_excluir, fila_ini, fila_fin, detalle, hoja_formato):
+    columns = []
+    data = OrderedDict()
+    max_col_index = col_to_index(col_datos_inicio)
+    
+    # Determinando el máximo índice de columna con datos
+    while any(hoja_formato[f'{index_to_col(max_col_index)}{fila}'].value is not None for fila in range(fila_ini, fila_fin + 1)):
+        max_col_index += 1
+    max_col_index -= 1  # Ajuste para obtener la última columna correcta
+    
+    # Extrayendo datos fila por fila
+    for fila in range(fila_ini, fila_fin + 1):
+        row = OrderedDict()
+        for col_index in range(col_to_index(col_datos_inicio), max_col_index + 1):
+            col = index_to_col(col_index)
+            if col != col_excluir:
+                cell_value = hoja_formato[f'{col}{fila}'].value
+                cell_value = "N/A" if cell_value is None else cell_value
+                row[col] = cell_value
+        if fila == fila_ini:
+            columns = list(row.keys())  # Guardar el orden de las columnas desde la primera fila
+        data[fila] = row
+    
+    # Creando DataFrame con el orden de columnas preservado
+    df = pd.DataFrame.from_dict(data, orient='index', columns=columns)
+    df.rename(columns=lambda x: f"{detalle} {col_to_index(x)-col_to_index(col_datos_inicio)+1}", inplace=True)
+    return df
