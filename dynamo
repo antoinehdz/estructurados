@@ -1,158 +1,214 @@
-client_id = "ID_del_Instrumento"  # Este debe ser un identificador único adecuado a tu caso de uso
+wb = load_workbook(ruta_prospectos+archivo, data_only=True)
+hoja_formato = wb["Formato"]
 
-def add_client_id_to_items(items, client_id):
-    """
-    Añade el CLIENT_ID a cada ítem en la lista de diccionarios
-    """
-    for item in items:
-        item['CLIENT_ID'] = client_id
-    return items
+celda = hoja_formato["BYT9"]
 
-# Añadir CLIENT_ID a cada lista de ítems
-items_info_identificador = add_client_id_to_items(items_info_identificador, client_id)
-items_informacion_general = add_client_id_to_items(items_informacion_general, client_id)
-items_proyectos_participantes = add_client_id_to_items(items_proyectos_participantes, client_id)
-items_activos_composicion = add_client_id_to_items(items_activos_composicion, client_id)
-items_gastos_comisiones = add_client_id_to_items(items_gastos_comisiones, client_id)
-items_coinversionistas = add_client_id_to_items(items_coinversionistas, client_id)
-items_llamadas_capital = add_client_id_to_items(items_llamadas_capital, client_id)
-items_distribuciones_pagadas = add_client_id_to_items(items_distribuciones_pagadas, client_id)
+def col_to_index(col):
+    """Convert Excel column letters to zero-indexed number."""
+    index = 0
+    for c in col:
+        index = index * 26 + (ord(c.upper()) - ord('A') + 1)
+    return index - 1
 
-import boto3
+def index_to_col(idx):
+    """Convert zero-indexed number to Excel column letters."""
+    col = ''
+    while idx >= 0:
+        idx, remainder = divmod(idx, 26)
+        col = chr(remainder + 65) + col
+        idx -= 1
+    return col
 
-# Inicializar el cliente de DynamoDB
-dynamodb = boto3.resource('dynamodb', region_name='tu-region')
-table = dynamodb.Table('NombreDeTuTabla')  # Reemplaza con el nombre real de tu tabla
+def extraccion_tablas(col_inicio,col_datos_inicio,col_excluir,  fila_ini, fila_finak, detalle):
+    # Determinar la última columna con datos empezando desde 'BYT'
+    max_col = col_datos_inicio
+    while True:
+        if any(hoja_formato[f'{max_col}{fila_inicio}'].value is not None for fila in range(fila_inicio, fila_fin + 1)):
+            max_col = index_to_col(col_to_index(max_col) + 1)
+        else:
+            break
 
-def upload_batch(batch_items):
-    """
-    Función para subir un lote de ítems a DynamoDB
-    """
-    with table.batch_writer() as batch:
-        for item in batch_items:
-            batch.put_item(Item=item)
+    max_col = index_to_col(col_to_index(max_col) - 1)  # Retroceder una columna, ajuste correcto
 
-# Subir cada DataFrame como un lote de ítems a DynamoDB
-upload_batch(items_info_identificador)
-upload_batch(items_informacion_general)
-upload_batch(items_proyectos_participantes)
-upload_batch(items_activos_composicion)
-upload_batch(items_gastos_comisiones)
-upload_batch(items_coinversionistas)
-upload_batch(items_llamadas_capital)
-upload_batch(items_distribuciones_pagadas)
+    # Leer los datos
+    data = []
+    index_values = []
+    for fila in range(fila_inicio, fila_fin + 1):
+        row_data = []
+        col = col_datos_inicio
+        index_values.append(hoja_formato[f'{col_inicio}{fila}'].value if hoja_formato[f'{col_inicio}{fila}'].value is not None else "N/A")
+        while col != index_to_col(col_to_index(max_col) + 1):  # Usar funciones para controlar el rango correctamente
+            if col != col_excluir:
+                celda = f'{col}{fila}'
+                row_data.append(hoja_formato[celda].value if hoja_formato[celda].value is not None else "N/A")
+            col = index_to_col(col_to_index(col) + 1)
+        data.append(row_data)
+
+    num_columns = len(data[0])
+    column_names = [f"{detalle} {i+1}" for i in range (num_columns)]
 
 
-####################3
-import boto3
-import pandas as pd
+    # Crear el DataFrame
+    return pd.DataFrame(data, columns = column_names, index = index_values)
 
-# Supongamos que todos los DataFrames ya están inicializados como se describió anteriormente
 
-def dataframe_to_dict(df):
-    """Convertir DataFrame a lista de diccionarios para compatibilidad con DynamoDB."""
-    return df.to_dict(orient='records')
+def sorted_numerically(df):
+    def extract_number(col):
+        match = re.search(r'(\d+)$', col)
+        if match:
+            return (True, int(match.group(1)))
+        else:
+            return (False, col)
+    
+    column_order = sorted(df.columns, key=extract_number)
+    return df[column_order]
 
-# Preparación del ítem
-item_to_insert = {
-    "CLIENT_ID": "1_R-X",
-    "Informacion_Instrumento": {
-        "CLIENT_ID": "Nombre del Instrumento",  # Asumiendo que es un string
-        "Fecha_Informacion": dataframe_to_dict(fecha_info),
-        "Info_Identificador": dataframe_to_dict(identificador),
-        "Informacion_General": dataframe_to_dict(info_general),
-        "Proyectos_Participantes": dataframe_to_dict(detalle_2),
-        "Activos_Composicion": dataframe_to_dict(detalle_3),
-        "Gastos_Comisiones": dataframe_to_dict(detalle_4),
-        "Coinversionistas": dataframe_to_dict(detalle_5),
-        "Llamadas_Capital": dataframe_to_dict(detalle_6),
-        "Distribuciones Pagadas": dataframe_to_dict(detalle_A)
-    }
-}
+col_inicio = 'BYR'  # Columna para índices
+col_datos_inicio = 'BYT'  # Columna inicial para datos
+col_excluir = 'BYS'  # Columna para excluir
 
-# Subir el ítem
-dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
-table = dynamodb.Table('NombreDeTuTabla')
-table.put_item(Item=item_to_insert)
+###########################ENCABEZADO: Fecha de la información.
 
-import boto3
-import pandas as pd
 
+fila_inicio = 9
+fila_fin = 9
+detalle = "Fecha"
+
+fecha_info = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+fecha_info.rename(columns = {"Fecha 1": "Fecha"}, inplace=True)
+
+fecha_info = fecha_info.reset_index()
+
+fecha_info = fecha_info.rename(columns = {"index": "Variables"})
+
+###########################SUBENCABEZADO: Identificación del Instrumento Estructurado.
+
+fila_inicio = 13
+fila_fin = 18
+detalle = "Identificación del Instrumento"
+
+identificador = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+identificador.rename(columns = {"Identificación del Instrumento 1": "Identificación del Instrumento Estructurado"}, inplace=True)
+
+index_rename = {identificador.index[0]: "ISIN", identificador.index[1]: "Tipo Valor", identificador.index[4]: "Ticker Bloomberg", identificador.index[5]: "Ticker Reuters"}
+identificador.rename(index=index_rename, inplace=True)
+
+nombre_instrumento = identificador.loc["Tipo Valor"].values[0] + "_" + identificador.loc["Emisora"].values[0] + "_" + identificador.loc["Serie"].values[0]
+
+identificador.drop(identificador.columns[1], axis=1, inplace=True)
+
+identificador = identificador.reset_index()
+
+identificador = identificador.rename(columns = {"index": "Variables"})
+
+
+###########################SUBENCABEZADO: Identificación del Instrumento Estructurado.
+
+fila_inicio = 22
+fila_fin = 43
+detalle = "Información General del Instrumento"
+
+info_general = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+index_rename = {info_general.index[14]: "InstrumentoSerieAdicional_Tipo_Valor", info_general.index[15]: "InstrumentoSerieAdicional_Emisor", info_general.index[16]: "InstrumentoSerieAdicional_Serie"}
+info_general.rename(index=index_rename, inplace=True)
+
+info_general.rename(columns = {"Información General del Instrumento 1": "Información General del Instrumento Estructurado"}, inplace=True)
+
+info_general = info_general.reset_index()
+
+info_general = info_general.rename(columns = {"index": "Variables"})
+
+##### DETALLE 2: Información de los proyectos o inversiones en los que participa el Instrumento Estructurado.
+
+fila_inicio = 49
+fila_fin = 71
+detalle = "Inversión"
+
+detalle_2 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+index_rename = {detalle_2.index[1]: "Inversion_Tipo_Valor", detalle_2.index[2]: "Inversion_Emisor", 
+                detalle_2.index[3]: "Inversion_Serie", detalle_2.index[6]: "Monto Total Invertido", 
+                detalle_2.index[8]: "Participación del Instrumento Estructurado en el proyecto de inversión", 
+                detalle_2.index[9]: "Participación del proyecto en el Instrumento Estructurado",
+                detalle_2.index[19]: "Valor Total del Proyecto Financiado"}
+detalle_2.rename(index=index_rename, inplace=True)
+
+detalle_2 = detalle_2.reset_index()
+
+detalle_2 = detalle_2.rename(columns = {"index": "Variables"})
+
+
+########################DETALLE 3: Información de los activos financieros o proyectos promovidos, que componen los fondos de inversión (Private equity fund, venture capital fund o similar).
+
+fila_inicio = 79
+fila_fin = 90
+detalle = "Inversión"
+
+detalle_3 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+
+detalle_3 = detalle_3.reset_index()
+
+detalle_3 = detalle_3.rename(columns = {"index": "Variables"})
+
+detalle_3 = sorted_numerically(detalle_3)
+
+##########################DETALLE 4: Información de los gastos o comisiones devengados del Instrumento Estructurado.
+
+fila_inicio = 103
+fila_fin = 107
+detalle = "Gasto/Comisión"
+
+detalle_4 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+detalle_4 = detalle_4.reset_index()
+
+detalle_4 = detalle_4.rename(columns = {"index": "Variables"})
+
+##########################DETALLE 5: Información de los Coinversionistas que participan en cada una de las inversiones o proyectos promovidos reportados en el DETALLE 2 por el Instrumento Estructurado.
+fila_inicio = 113
+fila_fin = 117
+detalle = "Inversión"
+
+detalle_5 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+
+index_rename = {detalle_5.index[3]: "Participación del Tipo de Coinversionista en el proyecto"}
+detalle_5.rename(index=index_rename, inplace=True)
+
+detalle_5 = detalle_5.reset_index()
+
+detalle_5 = detalle_5.rename(columns = {"index": "Variables"})
+
+#########################DETALLE 6: Información de las llamadas de capital y/o derechos de suscripción realizados del Instrumento Estructurado.
+fila_inicio = 123
+fila_fin = 130
+detalle = "Llamada de Capital"
+
+detalle_6 = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+detalle_6 = detalle_6.reset_index()
+
+detalle_6 = detalle_6.rename(columns = {"index": "Variables"})
+
+#########################DETALLE 6: Información de las llamadas de capital y/o derechos de suscripción realizados del Instrumento Estructurado.
+fila_inicio = 136
+fila_fin = 142
+detalle = "Distribución del Instrumento"
+
+detalle_A = extraccion_tablas(col_inicio,col_datos_inicio,col_excluir, fila_inicio, fila_fin, detalle)
+
+detalle_A.rename(columns = {"Distribución del Instrumento 1": "Distribuciones del Instrumento Estructurado"}, inplace=True)
+
+detalle_A = detalle_A.reset_index()
+
+detalle_A = detalle_A.rename(columns = {"index": "Variables"})
+
+#validador de tipo de datos (datetime, numpy.array)
 # Definición de la función de conversión de timestamps
-def convert_timestamps(df):
-    for col in df.columns:
-        if pd.api.types.is_datetime64_any_dtype(df[col]):
-            df[col] = df[col].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-    return df
-
-# Aplicar la función a cada DataFrame relevante
-fecha_info = convert_timestamps(fecha_info)
-identificador = convert_timestamps(identificador)
-info_general = convert_timestamps(info_general)
-detalle_2 = convert_timestamps(detalle_2)
-detalle_3 = convert_timestamps(detalle_3)
-detalle_4 = convert_timestamps(detalle_4)
-detalle_5 = convert_timestamps(detalle_5)
-detalle_6 = convert_timestamps(detalle_6)
-detalle_A = convert_timestamps(detalle_A)
-
-# Crear el ítem final para subir a DynamoDB
-item_to_insert = {
-    "CLIENT_ID": "1_R-X",
-    "Informacion_Instrumento": {
-        "CLIENT_ID": "Nombre del Instrumento",
-        "Fecha_Informacion": dataframe_to_dict(fecha_info),
-        "Info_Identificador": dataframe_to_dict(identificador),
-        "Informacion_General": dataframe_to_dict(info_general),
-        "Proyectos_Participantes": dataframe_to_dict(detalle_2),
-        "Activos_Composicion": dataframe_to_dict(detalle_3),
-        "Gastos_Comisiones": dataframe_to_dict(detalle_4),
-        "Coinversionistas": dataframe_to_dict(detalle_5),
-        "Llamadas_Capital": dataframe_to_dict(detalle_6),
-        "Distribuciones Pagadas": dataframe_to_dict(detalle_A)
-    }
-}
-
-
-#arreglo float
-
-from decimal import Decimal
-import pandas as pd
-
-from decimal import Decimal
-import pandas as pd
-
-def convert_floats_to_decimals(obj):
-    """
-    Recursivamente convierte todos los floats en un objeto estructurado (puede ser un diccionario, lista, o DataFrame) a Decimals.
-    """
-    if isinstance(obj, pd.DataFrame):  # Si es un DataFrame, aplicar a cada columna
-        for column in obj:
-            obj[column] = obj[column].apply(convert_floats_to_decimals)
-        return obj
-    elif isinstance(obj, list):  # Si es una lista, aplicar a cada elemento
-        return [convert_floats_to_decimals(x) for x in obj]
-    elif isinstance(obj, float):  # Si es un float, convertir a Decimal
-        return Decimal(str(obj))
-    return obj  # Si no es ni DataFrame, ni lista, ni float, retornar el objeto sin cambios
-
-
-fecha_info = convert_floats_to_decimals(fecha_info)
-identificador = convert_floats_to_decimals(identificador)
-info_general = convert_floats_to_decimals(info_general)
-detalle_2 = convert_floats_to_decimals(detalle_2)
-detalle_3 = convert_floats_to_decimals(detalle_3)
-detalle_4 = convert_floats_to_decimals(detalle_4)
-detalle_5 = convert_floats_to_decimals(detalle_5)
-detalle_6 = convert_floats_to_decimals(detalle_6)
-detalle_A = convert_floats_to_decimals(detalle_A)
-
-
-########################
-from decimal import Decimal
-import pandas as pd
-import datetime
-
 def convert_to_dynamodb_format(obj):
     """
     Recursivamente convierte objetos en un formato compatible con DynamoDB.
@@ -185,9 +241,78 @@ detalle_A = convert_to_dynamodb_format(detalle_A)
 
 
 
+###creacion dict
+
+# Creando el diccionario con estructura anidada
+instrumento_dict = {
+    "CLIENT_ID":nombre_instrumento, 
+    "Fecha_Informacion": fecha_info,
+    "Info_Identificador": identificador,
+    "Informacion_General":info_general,
+    "Proyectos_Participantes": detalle_2,
+    "Activos_Composicion": detalle_3,
+    "Gastos_Comisiones": detalle_4,
+    "Coinversionistas": detalle_5,
+    "Llamadas_Capital": detalle_6,
+    "Distribuciones Pagadas": detalle_A
+}
 
 
-# Inicializar el cliente de DynamoDB y subir el ítem
-dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
-table = dynamodb.Table('NombreDeTuTabla')
+def dataframe_to_item_list(df):
+    return df.to_dict(orient = 'records')  # Convierte el dataframe en una lista de diccionarios
+
+# Convirtiendo cada DataFrame en una lista de diccionarios
+items_fecha_info = dataframe_to_item_list(instrumento_dict["Fecha_Informacion"])
+items_info_identificador = dataframe_to_item_list(instrumento_dict["Info_Identificador"])
+items_informacion_general = dataframe_to_item_list(instrumento_dict["Informacion_General"])
+items_proyectos_participantes = dataframe_to_item_list(instrumento_dict["Proyectos_Participantes"])
+items_activos_composicion = dataframe_to_item_list(instrumento_dict["Activos_Composicion"])
+items_gastos_comisiones = dataframe_to_item_list(instrumento_dict["Gastos_Comisiones"])
+items_coinversionistas = dataframe_to_item_list(instrumento_dict["Coinversionistas"])
+items_llamadas_capital = dataframe_to_item_list(instrumento_dict["Llamadas_Capital"])
+items_distribuciones_pagadas = dataframe_to_item_list(instrumento_dict["Distribuciones Pagadas"])
+
+client_id = nombre_instrumento  # Este debe ser un identificador único adecuado a tu caso de uso
+
+# Preparación del ítem
+item_to_insert  = {
+    "CLIENT_ID":nombre_instrumento,
+    "Información Respectiva al Instrumento":{ 
+    "Fecha_Informacion": items_fecha_info,
+    "Info_Identificador": items_info_identificador,
+    "Informacion_General":items_informacion_general,
+    "Proyectos_Participantes": items_proyectos_participantes,
+    "Activos_Composicion": items_activos_composicion,
+    "Gastos_Comisiones": items_gastos_comisiones,
+    "Coinversionistas": items_coinversionistas,
+    "Llamadas_Capital": items_llamadas_capital,
+    "Distribuciones Pagadas": items_distribuciones_pagadas
+    }
+}
+
+# Subir el ítem
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+table = dynamodb.Table('BD_Alternativos')
 table.put_item(Item=item_to_insert)
+
+
+#Consultas
+
+def get_llamadas_capital_from_dynamodb(client_id):
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table = dynamodb.Table('BD_Alternativos')
+    response = table.get_item(Key={'CLIENT_ID': client_id})
+    item = response.get('Item', {})
+    llamadas_capital_info = item.get("Información Respectiva al Instrumento", {}).get("Activos_Composicion", [])
+    return llamadas_capital_info
+
+# Usar la función
+client_id = nombre_instrumento  # El CLIENT_ID usado para insertar el ítem
+llamadas_capital_info = get_llamadas_capital_from_dynamodb(client_id)
+print("Llamadas de Capital desde DynamoDB:", llamadas_capital_info)
+
+# Convertir la lista de diccionarios a DataFrame
+df_llamadas = pd.DataFrame(llamadas_capital_info)
+
+# Convertir todos los Decimals a floats para mejor manejo en el DataFrame (opcional)
+df_llamadas = df_llamadas.applymap(lambda x: float(x) if isinstance(x, Decimal) else x)
