@@ -1,3 +1,7 @@
+ClientError: An error occurred (ValidationException) when calling the BatchWriteItem operation: The provided key element does not match the schema
+
+
+
 import re
 import pandas as pd
 
